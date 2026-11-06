@@ -1,0 +1,398 @@
+vowels
+%{
+#include <stdio.h>
+int count = 0;
+%}
+
+%%
+[aAeEiIoOuU]   { count++; }
+.              ;
+\n             { printf("Number of vowels = %d\n", count); return 0; }
+%%
+
+int yywrap()
+{
+    return 1;
+}
+
+int main()
+{
+    printf("Enter a string:\n");
+    yylex();
+    return 0;
+}
+
+*positive/negative*
+%{
+#include<stdio.h>
+%}
+
+%%
+-[0-9]+      { printf("Negative Integer\n"); }
+[0-9]+       { printf("Positive Integer\n"); }
+\n           { return 0; }
+.            ;
+%%
+
+int yywrap()
+{
+    return 1;
+}
+
+int main()
+{
+    printf("Enter an integer: ");
+    yylex();
+    return 0;
+}
+
+*pattern matching*
+%{
+#include<stdio.h>
+#include<string.h>
+
+char pattern[20];
+int count=0;
+%}
+
+%%
+[a-zA-Z]+ { if(strcmp(yytext, pattern)==0) count++; }
+.|\n      ;
+%%
+
+int yywrap()
+{
+    return 1;
+}
+
+int main()
+{
+    printf("Enter the pattern: ");
+    scanf("%s", pattern);
+
+    printf("Enter the text:\n");
+    yylex();
+
+    printf("Number of matches = %d\n", count);
+    return 0;
+}
+
+2. LEX program to count characters, tabs, spaces and reserved words
+
+%{
+#include <stdio.h>
+
+int characters = 0;
+int tabs = 0;
+int spaces = 0;
+int keywords = 0;
+%}
+
+%%
+"int"|"float"|"char"|"double"|"if"|"else"|"while"|"for"|"return"
+{
+    keywords++;
+    characters += yyleng;
+}
+
+[ ]       { spaces++; characters++; }
+\t        { tabs++; characters++; }
+\n        { }
+.         { characters++; }
+%%
+
+int yywrap()
+{
+    return 1;
+}
+
+int main()
+{
+    printf("Enter input (Ctrl+Z then Enter to stop):\n");
+    yylex();
+
+    printf("\nCharacters = %d", characters);
+    printf("\nSpaces = %d", spaces);
+    printf("\nTabs = %d", tabs);
+    printf("\nReserved words = %d\n", keywords);
+
+    return 0;
+}
+
+5. LEX program to count words having length greater than 5 and less than 10
+%{
+#include <stdio.h>
+int count = 0;
+%}
+
+%%
+[a-zA-Z]+
+{
+    if(yyleng > 5 && yyleng < 10)
+        count++;
+}
+
+[ \t\n]+    { }
+.           { }
+%%
+
+int yywrap()
+{
+    return 1;
+}
+
+int main()
+{
+    printf("Enter a sentence:\n");
+    yylex();
+
+    printf("Number of words = %d\n", count);
+    return 0;
+}
+
+C program to calculate FOLLOW sets
+
+#include <stdio.h>
+#include <ctype.h>
+
+char p[6][10] = {
+    "E=E+T",
+    "E=T",
+    "T=T*F",
+    "T=F",
+    "F=(E)",
+    "F=id"
+};
+
+void follow(char c)
+{
+    int i, j;
+
+    if (c == 'E')
+        printf("$ ");
+
+    for (i = 0; i < 6; i++)
+    {
+        for (j = 2; p[i][j] != '\0'; j++)
+        {
+            if (p[i][j] == c)
+            {
+                if (p[i][j+1] != '\0')
+                {
+                    if (!isupper(p[i][j+1]))
+                        printf("%c ", p[i][j+1]);
+                }
+                else if (p[i][0] != c)
+                    follow(p[i][0]);
+            }
+        }
+    }
+}
+
+int main()
+{
+    printf("FOLLOW(E) = { ");
+    follow('E');
+    printf("}\n");
+
+    printf("FOLLOW(T) = { ");
+    follow('T');
+    printf("}\n");
+
+    printf("FOLLOW(F) = { ");
+    follow('F');
+    printf("}\n");
+
+    return 0;
+}
+
+Simple YACC Program for Infix to Postfix Conversion
+1. YACC file (infix.y)
+
+%{
+#include <stdio.h>
+int yylex();
+void yyerror(char *s);
+%}
+
+%token ID
+%left '+' '-'
+%left '*' '/'
+
+%%
+
+E : E '+' E  { printf("+ "); }
+  | E '-' E  { printf("- "); }
+  | E '*' E  { printf("* "); }
+  | E '/' E  { printf("/ "); }
+  | '(' E ')'
+  | ID       { printf("%c ", yylval); }
+  ;
+
+%%
+
+void yyerror(char *s)
+{
+    printf("Invalid expression");
+}
+
+int main()
+{
+    printf("Enter infix expression: ");
+    yyparse();
+    return 0;
+}
+
+
+
+2. Lex file (infix.l)
+
+%{
+#include "y.tab.h"
+%}
+
+%%
+
+[a-zA-Z0-9]  { yylval = yytext[0]; return ID; }
+[+\-*/()]    { return yytext[0]; }
+[ \t\n]      ;
+.            ;
+
+%%
+
+int yywrap()
+{
+    return 1;
+}
+
+
+ast.y
+%{
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+typedef struct node {
+    char v[20];
+    struct node *l, *r;
+} Node;
+
+Node *root;
+
+Node *create(char *v, Node *l, Node *r)
+{
+    Node *n = malloc(sizeof(Node));
+
+    strcpy(n->v, v);
+    n->l = l;
+    n->r = r;
+
+    return n;
+}
+
+int yylex(void);
+void yyerror(const char *s);
+
+void draw(Node *n, int d)
+{
+    int i;
+
+    if (n == NULL)
+        return;
+
+    for (i = 0; i < d; i++)
+        printf("  ");
+
+    printf("%s\n", n->v);
+
+    draw(n->l, d + 1);
+    draw(n->r, d + 1);
+}
+%}
+
+%union {
+    Node *n;
+    char *s;
+}
+
+%token <s> ID
+%type <n> E T F
+
+%%
+
+E : E '+' T
+    { $$ = root = create("+", $1, $3); }
+
+  | E '-' T
+    { $$ = root = create("-", $1, $3); }
+
+  | T
+    { $$ = $1; }
+  ;
+
+T : T '*' F
+    { $$ = create("*", $1, $3); }
+
+  | T '/' F
+    { $$ = create("/", $1, $3); }
+
+  | F
+    { $$ = $1; }
+  ;
+
+F : '(' E ')'
+    { $$ = $2; }
+
+  | ID
+    { $$ = create($1, NULL, NULL); }
+  ;
+
+%%
+
+void yyerror(const char *s)
+{
+    printf("Invalid expression\n");
+}
+
+int main()
+{
+    printf("Enter expression: ");
+
+    yyparse();
+
+    draw(root, 0);
+
+    return 0;
+}
+ast.l
+
+%{
+#include "ast.tab.h"
+#include <string.h>
+#include <stdlib.h>
+%}
+
+%%
+
+[ \t\n]+ ;
+
+[a-zA-Z_][a-zA-Z0-9_]* {
+    yylval.s = strdup(yytext);
+    return ID;
+}
+
+"+"     return '+';
+"-"     return '-';
+"*"     return '*';
+"/"     return '/';
+"("     return '(';
+")"     return ')';
+
+.       printf("Invalid character\n");
+
+%%
+
+int yywrap()
+{
+    return 1;
+}
